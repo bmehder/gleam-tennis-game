@@ -50,7 +50,7 @@ fn point_to_string(point: Point) -> String {
 }
 
 /// Returns the next point value after the current (non-Deuce or Ad) one.
-fn next_point(point: Point) -> Point {
+pub fn next_point(point: Point) -> Point {
   case point {
     Love -> Fifteen
     Fifteen -> Thirty
@@ -61,7 +61,7 @@ fn next_point(point: Point) -> Point {
 }
 
 /// Parses a string input into a Msg value.
-fn parse_input(line: String) -> Msg {
+pub fn parse_input(line: String) -> Msg {
   case string.trim(line) {
     "1" -> Player1Point
     "2" -> Player2Point
@@ -76,7 +76,11 @@ fn update_player(
   other_point: Point,
 ) -> GameState {
   case scorer_point, other_point {
-    Forty, _ -> GameOver(scorer, scorer_point, other_point)
+    Forty, _ ->
+      case scorer {
+        Player1 -> GameOver(Player1, scorer_point, other_point)
+        Player2 -> GameOver(Player2, other_point, scorer_point)
+      }
 
     _, _ -> {
       let new_scorer_point = next_point(scorer_point)
@@ -92,7 +96,11 @@ fn update_player(
   }
 }
 
-fn update_normal(scorer: Winner, p1_point: Point, p2_point: Point) -> GameState {
+pub fn update_normal(
+  scorer: Winner,
+  p1_point: Point,
+  p2_point: Point,
+) -> GameState {
   case scorer {
     Player1 -> update_player(Player1, p1_point, p2_point)
     Player2 -> update_player(Player2, p2_point, p1_point)
@@ -100,7 +108,7 @@ fn update_normal(scorer: Winner, p1_point: Point, p2_point: Point) -> GameState 
 }
 
 /// Updates the game state based on the current state and message.
-fn update(state: GameState, msg: Msg) -> GameState {
+pub fn update(state: GameState, msg: Msg) -> GameState {
   case state {
     Normal(p1_point, p2_point) ->
       case msg {
