@@ -129,6 +129,48 @@ fn update(state: GameState, msg: Msg) -> GameState {
   }
 }
 
+/// Returns a nicely formatted final score string for a completed game.
+fn display_final_score(winner: Winner, p1: Point, p2: Point) -> String {
+  case p1, p2 {
+    Forty, Forty ->
+      case winner {
+        Player1 -> player_to_string(Player1) <> " wins Deuce game!"
+        Player2 -> player_to_string(Player2) <> " wins Deuce game!"
+      }
+    _, _ ->
+      case winner {
+        Player1 ->
+          player_to_string(Player1)
+          <> " wins! Final score: "
+          <> point_to_string(p1)
+          <> " - "
+          <> point_to_string(p2)
+        Player2 ->
+          player_to_string(Player2)
+          <> " wins! Final score: "
+          <> point_to_string(p1)
+          <> " - "
+          <> point_to_string(p2)
+      }
+  }
+}
+
+/// Returns a string label for the given player.
+fn player_to_string(winner: Winner) -> String {
+  case winner {
+    Player1 -> "Player 1"
+    Player2 -> "Player 2"
+  }
+}
+
+/// Returns a string for the Advantage game state for the given player.
+fn display_advantage(winner: Winner) -> String {
+  case winner {
+    Player1 -> "Advantage " <> player_to_string(Player1)
+    Player2 -> "Advantage " <> player_to_string(Player2)
+  }
+}
+
 /// Returns a string representation of the current game state.
 fn view(state: GameState) -> String {
   case state {
@@ -136,30 +178,10 @@ fn view(state: GameState) -> String {
 
     Deuce -> "Deuce"
 
-    Advantage1(_, _) -> "Advantage player 1"
-    Advantage2(_, _) -> "Advantage player 2"
+    Advantage1(_, _) -> display_advantage(Player1)
+    Advantage2(_, _) -> display_advantage(Player2)
 
-    GameOver(winner, p1, p2) ->
-      case p1, p2 {
-        Forty, Forty ->
-          case winner {
-            Player1 -> "Player 1 wins Deuce game!"
-            Player2 -> "Player 2 wins Deuce game!"
-          }
-        _, _ ->
-          case winner {
-            Player1 ->
-              "Player 1 wins! Final score: "
-              <> point_to_string(p1)
-              <> " - "
-              <> point_to_string(p2)
-            Player2 ->
-              "Player 2 wins! Final score: "
-              <> point_to_string(p1)
-              <> " - "
-              <> point_to_string(p2)
-          }
-      }
+    GameOver(winner, p1, p2) -> display_final_score(winner, p1, p2)
   }
 }
 
