@@ -12,7 +12,7 @@ pub type Point {
   Forty
 }
 
-/// Represents the winner of the game.
+/// Represents a player (used for point winner and game winner).
 pub type Winner {
   Player1
   Player2
@@ -29,8 +29,8 @@ pub type Msg {
 pub type GameState {
   Normal(Point, Point)
   Deuce
-  Advantage1(Point, Point)
-  Advantage2(Point, Point)
+  Advantage1
+  Advantage2
   GameOver(Winner, Point, Point)
 }
 
@@ -109,19 +109,19 @@ fn update(state: GameState, msg: Msg) -> GameState {
       }
     Deuce ->
       case msg {
-        Player1Point -> Advantage1(Forty, Forty)
-        Player2Point -> Advantage2(Forty, Forty)
+        Player1Point -> Advantage1
+        Player2Point -> Advantage2
         InvalidInput -> state
       }
-    Advantage1(p1, p2) ->
+    Advantage1 ->
       case msg {
-        Player1Point -> GameOver(Player1, p1, p2)
+        Player1Point -> GameOver(Player1, Forty, Forty)
         Player2Point -> Deuce
         InvalidInput -> state
       }
-    Advantage2(p1, p2) ->
+    Advantage2 ->
       case msg {
-        Player2Point -> GameOver(Player2, p1, p2)
+        Player2Point -> GameOver(Player2, Forty, Forty)
         Player1Point -> Deuce
         InvalidInput -> state
       }
@@ -178,8 +178,8 @@ fn view(state: GameState) -> String {
 
     Deuce -> "Deuce"
 
-    Advantage1(_, _) -> display_advantage(Player1)
-    Advantage2(_, _) -> display_advantage(Player2)
+    Advantage1 -> display_advantage(Player1)
+    Advantage2 -> display_advantage(Player2)
 
     GameOver(winner, p1, p2) -> display_final_score(winner, p1, p2)
   }
