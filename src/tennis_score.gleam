@@ -1,7 +1,10 @@
+//// A simple CLI app to simulate tennis scoring between two players.
+
 import gleam/io
 import gleam/string
 import in
 
+/// Represents the possible (non-deuce or Ad) points a player can have in a tennis game.
 pub type Point {
   Love
   Fifteen
@@ -9,17 +12,20 @@ pub type Point {
   Forty
 }
 
+/// Represents the winner of the game.
 pub type Winner {
   Player1
   Player2
 }
 
+/// Represents the messages or inputs to update the game state.
 pub type Msg {
   Player1Point
   Player2Point
   InvalidInput
 }
 
+/// Represents the various states the tennis game can be in.
 pub type GameState {
   Normal(Point, Point)
   Deuce
@@ -28,10 +34,12 @@ pub type GameState {
   GameOver(Winner, Point, Point)
 }
 
+/// The main entry point of the tennis scoring application.
 pub fn main() {
   loop(Normal(Love, Love))
 }
 
+/// Converts a Normal (non-Deuce or Ad) Point value to its string representation.
 fn point_to_string(point: Point) -> String {
   case point {
     Love -> "0"
@@ -41,6 +49,7 @@ fn point_to_string(point: Point) -> String {
   }
 }
 
+/// Returns the next point value after the current (non-Deuce or Ad) one.
 fn next_point(point: Point) -> Point {
   case point {
     Love -> Fifteen
@@ -50,6 +59,7 @@ fn next_point(point: Point) -> Point {
   }
 }
 
+/// Parses a string input into a Msg value.
 fn parse_input(line: String) -> Msg {
   case string.trim(line) {
     "1" -> Player1Point
@@ -58,38 +68,43 @@ fn parse_input(line: String) -> Msg {
   }
 }
 
-fn update_normal_player1(p1: Point, p2: Point) -> GameState {
-  case p1, p2 {
-    Forty, _ -> GameOver(Player1, p1, p2)
-    _, _ -> {
-      let new_p1 = next_point(p1)
-      case new_p1, p2 {
-        Forty, Forty -> Deuce
-        _, _ -> Normal(new_p1, p2)
+fn update_normal(scorer: Winner, p1: Point, p2: Point) -> GameState {
+  case scorer {
+    Player1 -> {
+      case p1, p2 {
+        Forty, _ -> GameOver(Player1, p1, p2)
+        _, _ -> {
+          let new_p1 = next_point(p1)
+          case new_p1, p2 {
+            Forty, Forty -> Deuce
+            _, _ -> Normal(new_p1, p2)
+          }
+        }
+      }
+    }
+
+    Player2 -> {
+      case p1, p2 {
+        _, Forty -> GameOver(Player2, p1, p2)
+        _, _ -> {
+          let new_p2 = next_point(p2)
+          case p1, new_p2 {
+            Forty, Forty -> Deuce
+            _, _ -> Normal(p1, new_p2)
+          }
+        }
       }
     }
   }
 }
 
-fn update_normal_player2(p1: Point, p2: Point) -> GameState {
-  case p1, p2 {
-    _, Forty -> GameOver(Player2, p1, p2)
-    _, _ -> {
-      let new_p2 = next_point(p2)
-      case p1, new_p2 {
-        Forty, Forty -> Deuce
-        _, _ -> Normal(p1, new_p2)
-      }
-    }
-  }
-}
-
-fn update(msg: Msg, state: GameState) -> GameState {
+/// Updates the game state based on the current state and message.
+fn update(state: GameState, msg: Msg) -> GameState {
   case state {
     Normal(p1, p2) ->
       case msg {
-        Player1Point -> update_normal_player1(p1, p2)
-        Player2Point -> update_normal_player2(p1, p2)
+        Player1Point -> update_normal(Player1, p1, p2)
+        Player2Point -> update_normal(Player2, p1, p2)
         InvalidInput -> state
       }
     Deuce ->
@@ -114,6 +129,7 @@ fn update(msg: Msg, state: GameState) -> GameState {
   }
 }
 
+/// Returns a string representation of the current game state.
 fn view(state: GameState) -> String {
   case state {
     Normal(p1, p2) -> point_to_string(p1) <> " - " <> point_to_string(p2)
@@ -127,8 +143,8 @@ fn view(state: GameState) -> String {
       case p1, p2 {
         Forty, Forty ->
           case winner {
-            Player1 -> "Player 1 wins! Final score: Deuce game"
-            Player2 -> "Player 2 wins! Final score: Deuce game"
+            Player1 -> "Player 1 wins Deuce game!"
+            Player2 -> "Player 2 wins Deuce game!"
           }
         _, _ ->
           case winner {
@@ -147,6 +163,7 @@ fn view(state: GameState) -> String {
   }
 }
 
+/// The main loop that handles input/output and updates the game state.
 fn loop(state: GameState) {
   io.println(view(state))
 
@@ -158,7 +175,7 @@ fn loop(state: GameState) {
       io.print("Who won the point? (1 or 2): ")
       let assert Ok(line) = in.read_line()
       let msg = parse_input(line)
-      let new_state = update(msg, state)
+      let new_state = update(state, msg)
       loop(new_state)
     }
   }
