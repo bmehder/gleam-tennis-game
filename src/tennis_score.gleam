@@ -55,6 +55,7 @@ fn next_point(point: Point) -> Point {
     Love -> Fifteen
     Fifteen -> Thirty
     Thirty -> Forty
+    // Handle deuce somewhere else.
     Forty -> Forty
   }
 }
@@ -68,43 +69,43 @@ fn parse_input(line: String) -> Msg {
   }
 }
 
-fn update_normal(scorer: Winner, p1: Point, p2: Point) -> GameState {
-  case scorer {
-    Player1 -> {
-      case p1, p2 {
-        Forty, _ -> GameOver(Player1, p1, p2)
-        _, _ -> {
-          let new_p1 = next_point(p1)
-          case new_p1, p2 {
-            Forty, Forty -> Deuce
-            _, _ -> Normal(new_p1, p2)
-          }
-        }
-      }
-    }
+/// Updates the points in a Normal state for whichever player scored.
+fn update_player(
+  scorer: Winner,
+  scorer_point: Point,
+  other_point: Point,
+) -> GameState {
+  case scorer_point, other_point {
+    Forty, _ -> GameOver(scorer, scorer_point, other_point)
 
-    Player2 -> {
-      case p1, p2 {
-        _, Forty -> GameOver(Player2, p1, p2)
-        _, _ -> {
-          let new_p2 = next_point(p2)
-          case p1, new_p2 {
-            Forty, Forty -> Deuce
-            _, _ -> Normal(p1, new_p2)
+    _, _ -> {
+      let new_scorer_point = next_point(scorer_point)
+      case new_scorer_point, other_point {
+        Forty, Forty -> Deuce
+        _, _ ->
+          case scorer {
+            Player1 -> Normal(new_scorer_point, other_point)
+            Player2 -> Normal(other_point, new_scorer_point)
           }
-        }
       }
     }
+  }
+}
+
+fn update_normal(scorer: Winner, p1_point: Point, p2_point: Point) -> GameState {
+  case scorer {
+    Player1 -> update_player(Player1, p1_point, p2_point)
+    Player2 -> update_player(Player2, p2_point, p1_point)
   }
 }
 
 /// Updates the game state based on the current state and message.
 fn update(state: GameState, msg: Msg) -> GameState {
   case state {
-    Normal(p1, p2) ->
+    Normal(p1_point, p2_point) ->
       case msg {
-        Player1Point -> update_normal(Player1, p1, p2)
-        Player2Point -> update_normal(Player2, p1, p2)
+        Player1Point -> update_normal(Player1, p1_point, p2_point)
+        Player2Point -> update_normal(Player2, p1_point, p2_point)
         InvalidInput -> state
       }
     Deuce ->
@@ -130,8 +131,12 @@ fn update(state: GameState, msg: Msg) -> GameState {
 }
 
 /// Returns a nicely formatted final score string for a completed game.
-fn display_final_score(winner: Winner, p1: Point, p2: Point) -> String {
-  case p1, p2 {
+fn display_final_score(
+  winner: Winner,
+  p1_point: Point,
+  p2_point: Point,
+) -> String {
+  case p1_point, p2_point {
     Forty, Forty ->
       case winner {
         Player1 -> player_to_string(Player1) <> " wins Deuce game!"
@@ -142,15 +147,15 @@ fn display_final_score(winner: Winner, p1: Point, p2: Point) -> String {
         Player1 ->
           player_to_string(Player1)
           <> " wins! Final score: "
-          <> point_to_string(p1)
+          <> point_to_string(p1_point)
           <> " - "
-          <> point_to_string(p2)
+          <> point_to_string(p2_point)
         Player2 ->
           player_to_string(Player2)
           <> " wins! Final score: "
-          <> point_to_string(p1)
+          <> point_to_string(p1_point)
           <> " - "
-          <> point_to_string(p2)
+          <> point_to_string(p2_point)
       }
   }
 }
